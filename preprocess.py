@@ -9,10 +9,11 @@ data['train'].to_csv("tapaco_pt.csv", index=False)
 df = pd.read_csv("tapaco_pt.csv")
 
 df.set_index(['paraphrase_set_id', 'sentence_id'], inplace=True)
-new_df = pd.DataFrame(columns=['id', 'setA', 'setB'])
+new_df = []
 for id, group in tqdm(df.groupby(level=0)):
     for seta, setb in permutations(group['paraphrase'], 2):
-        new_df = new_df.append({'id': id, 'setA':seta, 'setB':setb}, ignore_index=True)
+        new_df.append({'id': id, 'setA':seta, 'setB':setb})
+new_df = pd.DataFrame(new_df, columns=['id', 'setA', 'setB'])
 del df
 del data
 
