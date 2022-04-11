@@ -1,3 +1,3 @@
-# porteguese-paraphrasing
+# portuguese-paraphrasing
 
 Portuguese paraphrasing using mT5
