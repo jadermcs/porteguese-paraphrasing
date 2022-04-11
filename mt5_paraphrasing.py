@@ -30,7 +30,7 @@ data_collator = DataCollatorForSeq2Seq(
 
 args = Seq2SeqTrainingArguments(
     "models/paraphrasing_pt",
-    per_device_train_batch_size=8,
+    per_device_train_batch_size=4,
     gradient_accumulation_steps=16,
     save_strategy="epoch",
 )
