@@ -13,10 +13,10 @@ data = load_from_disk("data/mt5data")
 def tokenize(example):
     a = tokenizer("paraphrase: "+example['setA'], max_length=256,
             padding="max_length", truncation=True)
-  with tokenizer.as_target_tokenizer():
-    b = tokenizer.encode(example['setB'], max_length=256,
+    with tokenizer.as_target_tokenizer():
+        b = tokenizer.encode(example['setB'], max_length=256,
             padding="max_length", truncation=True)
-  return {**a, 'labels': b}
+    return {**a, 'labels': b}
 
 col_names = data['train'].features
 data = data.map(
