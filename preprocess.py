@@ -1,4 +1,4 @@
-from datasets import load_dataset, Dataset, load_from_disk
+from datasets import load_dataset, Dataset, DatasetDict
 import pandas as pd
 from tqdm import tqdm
 from itertools import permutations
@@ -18,6 +18,12 @@ del df
 del data
 
 data = Dataset.from_pandas(new_df)
-data = data.train_test_split(test_size=0.1)
+train = data.filter(lambda x: x["id"] % 2 == 1)
+valid = data.filter(lambda x: x["id"] % 2 == 0)
+data = DatasetDict({
+    "train": train,
+    "valid": valid,
+})
 del new_df
+
 data.save_to_disk("data/mt5data")

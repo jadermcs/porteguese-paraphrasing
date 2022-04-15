@@ -42,7 +42,7 @@ trainer = Seq2SeqTrainer(
     args=args,
     tokenizer=tokenizer,
     train_dataset=data['train'],
-    eval_dataset=data['test'],
+    eval_dataset=data['valid'],
     data_collator=data_collator,
 )
 
