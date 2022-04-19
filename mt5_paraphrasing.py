@@ -5,8 +5,8 @@ from transformers import (
 )
 from datasets import load_from_disk
 
-model = MT5ForConditionalGeneration.from_pretrained("google/mt5-small")
-tokenizer = MT5Tokenizer.from_pretrained("google/mt5-small")
+model = MT5ForConditionalGeneration.from_pretrained("google/mt5-base")
+tokenizer = MT5Tokenizer.from_pretrained("google/mt5-base")
 
 data = load_from_disk("data/mt5data")
 
@@ -32,9 +32,14 @@ data_collator = DataCollatorForSeq2Seq(
 
 args = Seq2SeqTrainingArguments(
     "models/paraphrasing_pt",
-    per_device_train_batch_size=16,
-    gradient_accumulation_steps=4,
+    run_name="paraphrasing_pt",
+    learning_rate=3e-5,
+    per_device_train_batch_size=8,
+    gradient_accumulation_steps=8,
+    weight_decay=.1,
     save_strategy="epoch",
+    num_train_epochs=50,
+    report_to="wandb",
 )
 
 trainer = Seq2SeqTrainer(
