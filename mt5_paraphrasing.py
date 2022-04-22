@@ -4,6 +4,9 @@ from transformers import (
     DataCollatorForSeq2Seq,
 )
 from datasets import load_from_disk
+import wandb
+
+wandb.init(project_name="portuguese_paraphrasing")
 
 model = MT5ForConditionalGeneration.from_pretrained("google/mt5-base")
 tokenizer = MT5Tokenizer.from_pretrained("google/mt5-base")
@@ -37,8 +40,9 @@ args = Seq2SeqTrainingArguments(
     per_device_train_batch_size=4,
     gradient_accumulation_steps=16,
     weight_decay=.1,
-    save_strategy="epoch",
-    num_train_epochs=50,
+    save_strategy="no",
+    evaluation_strategy="epoch",
+    num_train_epochs=20,
     report_to="wandb",
 )
 
@@ -52,3 +56,4 @@ trainer = Seq2SeqTrainer(
 )
 
 trainer.train()
+trainer.save_model()
