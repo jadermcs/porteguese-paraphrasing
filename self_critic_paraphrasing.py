@@ -57,7 +57,7 @@ data.save_to_disk("data/critic_data")
 data = load_from_disk("data/critic_data")
 
 def batched_eda(examples):
-    return [eda(example, num_aug=1)[0] for example in examples]
+    return [eda(example, alpha_sr=.0, num_aug=1)[0] for example in examples]
 
 def gen_examples(examples):
   len_examples = len(examples["setA"])

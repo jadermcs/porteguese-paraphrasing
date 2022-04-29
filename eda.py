@@ -53,6 +53,48 @@ def get_only_chars(line):
     return clean_line
 
 ########################################################################
+# Synonym replacement
+# Replace n words in the sentence with synonyms from wordnet
+########################################################################
+
+#for the first time you use wordnet
+import nltk
+nltk.download('wordnet')
+from nltk.corpus import wordnet 
+
+def synonym_replacement(words, n):
+	new_words = words.copy()
+	random_word_list = list(set([word for word in words if word not in stop_words]))
+	random.shuffle(random_word_list)
+	num_replaced = 0
+	for random_word in random_word_list:
+		synonyms = get_synonyms(random_word)
+		if len(synonyms) >= 1:
+			synonym = random.choice(list(synonyms))
+			new_words = [synonym if word == random_word else word for word in new_words]
+			#print("replaced", random_word, "with", synonym)
+			num_replaced += 1
+		if num_replaced >= n: #only replace up to n words
+			break
+
+	#this is stupid but we need it, trust me
+	sentence = ' '.join(new_words)
+	new_words = sentence.split(' ')
+
+	return new_words
+
+def get_synonyms(word):
+	synonyms = set()
+	for syn in wordnet.synsets(word): 
+		for l in syn.lemmas(): 
+			synonym = l.name().replace("_", " ").replace("-", " ").lower()
+			synonym = "".join([char for char in synonym if char in ' qwertyuiopasdfghjklzxcvbnm'])
+			synonyms.add(synonym) 
+	if word in synonyms:
+		synonyms.remove(word)
+	return list(synonyms)
+
+########################################################################
 # Random deletion
 # Randomly delete words from the sentence with probability p
 ########################################################################
@@ -128,15 +170,22 @@ def add_word(new_words):
 # main data augmentation function
 ########################################################################
 
-def eda(sentence, alpha_ri=0.1, alpha_rs=0.1, p_rd=0.1, num_aug=9):
+def eda(sentence, alpha_sr=0.1, alpha_ri=0.1, alpha_rs=0.1, p_rd=0.1, num_aug=9):
 	
 	sentence = get_only_chars(sentence)
 	words = sentence.split(' ')
-	words = [word for word in words if word is not '']
+	words = [word for word in words if word != '']
 	num_words = len(words)
 	
 	augmented_sentences = []
 	num_new_per_technique = int(num_aug/4)+1
+
+	#sr
+	if (alpha_sr > 0):
+		n_sr = max(1, int(alpha_sr*num_words))
+		for _ in range(num_new_per_technique):
+			a_words = synonym_replacement(words, n_sr)
+			augmented_sentences.append(' '.join(a_words))
 
 	#ri
 	if (alpha_ri > 0):
