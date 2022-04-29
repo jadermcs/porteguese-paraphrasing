@@ -19,7 +19,7 @@ tokenizer = BertTokenizer.from_pretrained("distilbert-base-uncased")
 data = load_dataset("tapaco", "en")
 data['train'].to_csv("data/tapaco_en.csv", index=False)
 
-sample_data = True
+sample_data = False
 
 df = pd.read_csv("data/tapaco_en.csv")
 df.drop(columns=["lists", "tags", "language"], inplace=True)
@@ -27,8 +27,6 @@ df["paraphrase"] = df["paraphrase"].str.lower()
 if sample_data:
   indexes = np.random.choice(df["paraphrase_set_id"].unique(), size=1000)
   df = df[df["paraphrase_set_id"].isin(indexes)]
-print(df.shape)
-df.tail()
 
 train_indexes = df[df.paraphrase_set_id % 4 != 0].index
 valid_indexes = df[df.paraphrase_set_id % 4 == 0].index
@@ -52,16 +50,12 @@ def get_other(df):
 train_df = get_other(train_df)
 valid_df = get_other(valid_df)
 
-train_df.head(10)
-
 train = Dataset.from_pandas(train_df, split="train")
 valid = Dataset.from_pandas(valid_df, split="valid")
 data = DatasetDict({"train": train, "valid": valid})
 data.save_to_disk("data/critic_data")
 
 data = load_from_disk("data/critic_data")
-
-data
 
 def batched_eda(examples):
   return [eda(example, num_aug=1)[0] for example in examples]
@@ -82,7 +76,6 @@ data = data.map(
     remove_columns=["id", "other"],
     batched=True,
 ).shuffle()
-data
 
 def tokenize(example):
   result = tokenizer(example['setA'], example['setB'], max_length=256,
@@ -94,7 +87,6 @@ data = data.map(
     tokenize,
     remove_columns=["setA", "setB"],
 )
-data
 
 def compute_metrics(pred):
     labels = pred.label_ids
