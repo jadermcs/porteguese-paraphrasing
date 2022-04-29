@@ -36,11 +36,11 @@ valid_indexes = df[df.paraphrase_set_id % 4 == 0].index
 def match_pairs(df, index):
     df = df.loc[index]
     df.set_index(['paraphrase_set_id', 'sentence_id'], inplace=True)
-    new_df = pd.DataFrame(columns=['id', 'setA', 'setB'])
+    new_df = []
     for id, group in tqdm(df.groupby(level=0)):
         for seta, setb in permutations(group['paraphrase'], 2):
-            new_df = new_df.append({'id': id, 'setA':seta, 'setB':setb}, ignore_index=True)
-    return new_df
+            new_df.append({'id': id, 'setA':seta, 'setB':setb})
+    return pd.concat(new_df, ignore_index=True)
 
 train_df = match_pairs(df, train_indexes)
 valid_df = match_pairs(df, valid_indexes)
@@ -57,7 +57,7 @@ train_df.head(10)
 train = Dataset.from_pandas(train_df, split="train")
 valid = Dataset.from_pandas(valid_df, split="valid")
 data = DatasetDict({"train": train, "valid": valid})
-data.save_to_disk("data/critica_data")
+data.save_to_disk("data/critic_data")
 
 data = load_from_disk("data/critic_data")
 
