@@ -17,11 +17,11 @@ model = BertForSequenceClassification.from_pretrained("distilbert-base-uncased")
 tokenizer = BertTokenizer.from_pretrained("distilbert-base-uncased")
 
 data = load_dataset("tapaco", "en")
-data['train'].to_csv("tapaco_en.csv", index=False)
+data['train'].to_csv("data/tapaco_en.csv", index=False)
 
 sample_data = True
 
-df = pd.read_csv("tapaco_en.csv")
+df = pd.read_csv("data/tapaco_en.csv")
 df.drop(columns=["lists", "tags", "language"], inplace=True)
 df["paraphrase"] = df["paraphrase"].str.lower()
 if sample_data:
@@ -57,9 +57,9 @@ train_df.head(10)
 train = Dataset.from_pandas(train_df, split="train")
 valid = Dataset.from_pandas(valid_df, split="valid")
 data = DatasetDict({"train": train, "valid": valid})
-#data.save_to_disk("/content/drive/MyDrive/models/mt5data")
+data.save_to_disk("data/critica_data")
 
-#data = load_from_disk("/content/drive/MyDrive/models/mt5data")
+data = load_from_disk("data/critic_data")
 
 data
 
