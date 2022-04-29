@@ -3,5 +3,5 @@ transformers
 datasets
 sentencepiece
 wandb
-nltk
 scikit-learn
+deepspeed

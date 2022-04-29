@@ -1,7 +1,6 @@
-import nltk; nltk.download('wordnet')
-
 import pandas as pd
 import numpy as np
+import random
 from tqdm import tqdm
 from itertools import permutations
 from eda import eda
@@ -25,7 +24,7 @@ df = pd.read_csv("data/tapaco_en.csv")
 df.drop(columns=["lists", "tags", "language"], inplace=True)
 df["paraphrase"] = df["paraphrase"].str.lower()
 if sample_data:
-  indexes = np.random.choice(df["paraphrase_set_id"].unique(), size=1000)
+  indexes = random.choice(df["paraphrase_set_id"].unique(), k=1000)
   df = df[df["paraphrase_set_id"].isin(indexes)]
 
 train_indexes = df[df.paraphrase_set_id % 10 != 0].index
@@ -58,16 +57,16 @@ data.save_to_disk("data/critic_data")
 data = load_from_disk("data/critic_data")
 
 def batched_eda(examples):
-  return [eda(example, num_aug=1)[0] for example in examples]
+    return [eda(example, num_aug=1)[0] for example in examples]
 
 def gen_examples(examples):
   len_examples = len(examples["setA"])
   result = {
       "labels": [1]*len_examples + [0]*len_examples,
-      "setA": examples["setA"] + examples["setA"].copy(),
+      "setA": examples["setA"] + examples["setA"],
       "setB": examples["setB"] + (
-                np.random.choice(batched_eda(examples["setA"])+examples["other"],
-                size=len_examples,
+                random.choices(batched_eda(examples["setA"])+examples["other"],
+                k=len_examples)
             ) # create fake paraphrasing
     }
   return result
@@ -80,7 +79,7 @@ data = data.map(
 
 def tokenize(example):
   result = tokenizer(example['setA'], example['setB'], max_length=256,
-                  padding="max_length", truncation=True)
+                  padding="max_length", truncation=True, return_tensors="pt")
   return result
 
 col_names = data['train'].features
@@ -104,11 +103,13 @@ def compute_metrics(pred):
 args = TrainingArguments(
     "models/bert_fake_paraphrase_detector",
     num_train_epochs=20,
-    per_device_train_batch_size=32,
-    gradient_accumulation_steps=2,
+    learning_rate=3e-5,
+    per_device_train_batch_size=64,
+    gradient_accumulation_steps=1,
+    per_device_eval_batch_size=64,
     save_strategy="no",
     evaluation_strategy="steps",
-    eval_steps=100,
+    eval_steps=500,
     warmup_steps=500,
     weight_decay=0.01,
     report_to="wandb",
