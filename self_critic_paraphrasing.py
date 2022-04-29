@@ -40,7 +40,7 @@ def match_pairs(df, index):
     for id, group in tqdm(df.groupby(level=0)):
         for seta, setb in permutations(group['paraphrase'], 2):
             new_df.append({'id': id, 'setA':seta, 'setB':setb})
-    return pd.concat(new_df, ignore_index=True)
+    return pd.DataFrame.from_records(new_df, ignore_index=True)
 
 train_df = match_pairs(df, train_indexes)
 valid_df = match_pairs(df, valid_indexes)
