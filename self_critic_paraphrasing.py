@@ -2,7 +2,6 @@ import nltk; nltk.download('wordnet')
 
 import pandas as pd
 import numpy as np
-import random
 from tqdm import tqdm
 from itertools import permutations
 from eda import eda
@@ -13,6 +12,7 @@ from transformers import (
 from datasets import load_dataset, Dataset, DatasetDict, load_from_disk, load_metric
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
+np.random.seed(42)
 model = BertForSequenceClassification.from_pretrained("distilbert-base-uncased")
 tokenizer = BertTokenizer.from_pretrained("distilbert-base-uncased")
 
@@ -28,8 +28,8 @@ if sample_data:
   indexes = np.random.choice(df["paraphrase_set_id"].unique(), size=1000)
   df = df[df["paraphrase_set_id"].isin(indexes)]
 
-train_indexes = df[df.paraphrase_set_id % 4 != 0].index
-valid_indexes = df[df.paraphrase_set_id % 4 == 0].index
+train_indexes = df[df.paraphrase_set_id % 10 != 0].index
+valid_indexes = df[df.paraphrase_set_id % 10 == 0].index
 
 def match_pairs(df, index):
     df = df.loc[index]
@@ -66,7 +66,8 @@ def gen_examples(examples):
       "labels": [1]*len_examples + [0]*len_examples,
       "setA": examples["setA"] + examples["setA"].copy(),
       "setB": examples["setB"] + (
-            batched_eda(examples["setA"]) if random.random() <= .5 else examples["other"]
+                np.random.choice(batched_eda(examples["setA"])+examples["other"],
+                size=len_examples,
             ) # create fake paraphrasing
     }
   return result
