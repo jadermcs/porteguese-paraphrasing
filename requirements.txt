@@ -5,3 +5,4 @@ sentencepiece
 wandb
 scikit-learn
 deepspeed
+nltk
