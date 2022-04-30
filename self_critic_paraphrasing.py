@@ -79,7 +79,7 @@ data = data.map(
 
 def tokenize(example):
   result = tokenizer(example['setA'], example['setB'], max_length=256,
-                  padding="max_length", truncation=True, return_tensors="pt")
+                  padding="max_length", truncation=True)
   return result
 
 col_names = data['train'].features
@@ -104,9 +104,9 @@ args = TrainingArguments(
     "models/bert_fake_paraphrase_detector",
     num_train_epochs=20,
     learning_rate=3e-5,
-    per_device_train_batch_size=64,
-    gradient_accumulation_steps=1,
-    per_device_eval_batch_size=64,
+    per_device_train_batch_size=128,
+    gradient_accumulation_steps=2,
+    per_device_eval_batch_size=128,
     save_strategy="no",
     evaluation_strategy="steps",
     eval_steps=500,
