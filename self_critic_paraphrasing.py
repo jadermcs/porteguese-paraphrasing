@@ -52,9 +52,6 @@ valid_df = get_other(valid_df)
 train = Dataset.from_pandas(train_df, split="train")
 valid = Dataset.from_pandas(valid_df, split="valid")
 data = DatasetDict({"train": train, "valid": valid})
-data.save_to_disk("data/critic_data")
-
-data = load_from_disk("data/critic_data")
 
 def batched_eda(examples):
     return [eda(example, alpha_sr=.0, num_aug=1)[0] for example in examples]
@@ -75,7 +72,8 @@ data = data.map(
     gen_examples,
     remove_columns=["id", "other"],
     batched=True,
-).shuffle()
+    num_proc=8,
+)
 
 def tokenize(example):
   result = tokenizer(example['setA'], example['setB'], max_length=256,
@@ -86,7 +84,11 @@ col_names = data['train'].features
 data = data.map(
     tokenize,
     remove_columns=["setA", "setB"],
+    batched=True,
+    num_proc=8,
 )
+data.save_to_disk("data/critic_data")
+data = load_from_disk("data/critic_data")
 
 def compute_metrics(pred):
     labels = pred.label_ids
@@ -104,9 +106,9 @@ args = TrainingArguments(
     "models/bert_fake_paraphrase_detector",
     num_train_epochs=20,
     learning_rate=3e-5,
-    per_device_train_batch_size=128,
+    per_device_train_batch_size=64,
     gradient_accumulation_steps=2,
-    per_device_eval_batch_size=128,
+    per_device_eval_batch_size=64,
     save_strategy="no",
     evaluation_strategy="steps",
     eval_steps=500,
