@@ -6,3 +6,7 @@ wandb
 scikit-learn
 deepspeed
 nltk
+matplotlib
+seaborn
+ipywidgets
+jupyter

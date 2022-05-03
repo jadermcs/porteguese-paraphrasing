@@ -35,14 +35,13 @@ def get_only_chars(line):
     clean_line = ""
 
     line = line.replace("’", "")
-    line = line.replace("'", "")
     line = line.replace("-", " ") #replace hyphens with spaces
     line = line.replace("\t", " ")
     line = line.replace("\n", " ")
     line = line.lower()
 
     for char in line:
-        if char in 'qwertyuiopasdfghjklzxcvbnm ':
+        if char in "qwertyuiopasdfghjklzxcvbnm .?!'":
             clean_line += char
         else:
             clean_line += ' '
