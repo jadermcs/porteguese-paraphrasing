@@ -52,7 +52,7 @@ def generate_data():
     def get_other(df):
         df["other"] = None
         for index in df.index:
-            examples = df.sample(1000, seed=seed)
+            examples = df.sample(1000)
             i = 0
             while df.loc[index, "other"] is None:
                 if df.loc[index, "id"] != examples.iloc[i]["id"]:
