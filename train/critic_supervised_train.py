@@ -5,7 +5,7 @@ from transformers import (
 )
 from datasets import load_from_disk
 from sklearn.metrics import (
-    mean_squared_error, mean_absolute_error, r2_score, max_error,
+    accuracy_score, mean_squared_error, mean_absolute_error, precision_recall_fscore_support, r2_score, max_error,
     mean_absolute_percentage_error)
 
 def critic_train(raw_args=None):
@@ -45,15 +45,27 @@ def critic_train(raw_args=None):
         num_proc=8,
     )
 
-    def compute_metrics(eval_pred):
-        predictions, labels = eval_pred
+    # def compute_metrics(eval_pred):
+    #     predictions, labels = eval_pred
+    #     return {
+    #         "rmse": mean_squared_error(labels, predictions, squared=False),
+    #         "mae": mean_absolute_error(labels, predictions),
+    #         "r2_score": r2_score(labels, predictions),
+    #         "max_error": max_error(labels, predictions),
+    #         "mape": mean_absolute_percentage_error(labels, predictions),
+    #         }
+
+    def compute_metrics(pred):
+        labels = pred.label_ids
+        preds = pred.predictions.argmax(-1)
+        precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='binary')
+        acc = accuracy_score(labels, preds)
         return {
-            "rmse": mean_squared_error(labels, predictions, squared=False),
-            "mae": mean_absolute_error(labels, predictions),
-            "r2_score": r2_score(labels, predictions),
-            "max_error": max_error(labels, predictions),
-            "mape": mean_absolute_percentage_error(labels, predictions),
-            }
+            'accuracy': acc,
+            'f1': f1,
+            'precision': precision,
+            'recall': recall
+        }
 
     args = TrainingArguments(
         "models/critic",
