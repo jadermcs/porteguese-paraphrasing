@@ -19,8 +19,8 @@ def main():
 
     ppo_trainer([
         "--num_train_epochs", "20",
-        "--actor", "t5-small",
-        "--critic", "distilbert-base-uncased",
+        #"--actor", "t5-small",
+        #"--critic", "distilbert-base-uncased",
     ])
 
 if __name__ == "__main__":
