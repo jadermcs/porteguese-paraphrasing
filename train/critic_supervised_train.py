@@ -28,7 +28,7 @@ def critic_train(raw_args=None):
     args = parser.parse_args(raw_args)
     
     # config for regression:
-    model = BertForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels = 1)
+    model = BertForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels = 2)
     tokenizer = BertTokenizer.from_pretrained("distilbert-base-uncased")
 
     data = load_from_disk("data/critic_data")

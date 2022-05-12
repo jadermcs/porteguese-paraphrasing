@@ -28,7 +28,7 @@ def actor_train(raw_args=None):
     model = MT5ForConditionalGeneration.from_pretrained("google/t5-small")
     tokenizer = MT5Tokenizer.from_pretrained("google/t5-small")
 
-    data = load_from_disk("data/t5data")
+    data = load_from_disk("data/actor_data")
 
     def tokenize(example):
         # add prefix for T5 and tokenize
