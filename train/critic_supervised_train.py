@@ -33,21 +33,6 @@ def critic_train(raw_args=None):
 
     data = load_from_disk("data/critic_data")
 
-    def tokenize(example):
-        result = tokenizer(example['setA'], example['setB'], max_length=args.token_length,
-                            padding="max_length", truncation=True)
-        return result
-    
-    data = data.map(
-        tokenize,
-        remove_columns=["setA", "setB"],
-        batched=True,
-        num_proc=8,
-    )
-    data.save_to_disk("data/critic_data")
-    data = load_from_disk("data/critic_data")
-
-
     def compute_metrics(eval_pred):
         predictions, labels = eval_pred
         return {
@@ -66,7 +51,7 @@ def critic_train(raw_args=None):
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         save_strategy="no",
         evaluation_strategy="steps",
-        warmup_steps=args.warmup_steps,
+        warmup_steps=args.num_warmup_steps,
         weight_decay=args.weight_decay,
         report_to="wandb",
     )
