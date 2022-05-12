@@ -53,8 +53,9 @@ def generate_data():
         df["other"] = None
         counts_list = list(df.id.value_counts().items())
         for index, counts in tqdm(counts_list):
-            df.loc[df["id"] == index, "other"] = \
-                df.loc[df["id"] != index]["setB"].sample(counts).values
+            index_mask = df["id"] == index
+            df.loc[index_mask, "other"] = \
+                df.loc[~index_mask]["setB"].sample(counts).values
         return df
 
     train_df = get_other(train_df)
