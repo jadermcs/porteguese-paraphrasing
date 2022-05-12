@@ -33,6 +33,18 @@ def critic_train(raw_args=None):
 
     data = load_from_disk("data/critic_data")
 
+    def tokenize(example):
+        result = tokenizer(example['setA'], example['setB'], max_length=args.token_length,
+                            padding="max_length", truncation=True)
+        return result
+    
+    data = data.map(
+        tokenize,
+        remove_columns=["setA", "setB"],
+        batched=True,
+        num_proc=8,
+    )
+
     def compute_metrics(eval_pred):
         predictions, labels = eval_pred
         return {

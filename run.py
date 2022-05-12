@@ -7,7 +7,7 @@ from train.actor_critic_ppo import ppo_trainer
 
 def main():
     wandb.init(project="rl-paraphrasing")
-    # generate_data()
+    generate_data()
 
     critic_train([
         "--num_train_epochs", "20",
