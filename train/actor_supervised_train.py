@@ -60,7 +60,7 @@ def actor_train(raw_args=None):
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         save_strategy="no",
         evaluation_strategy="steps",
-        warmup_steps=args.warmup_steps,
+        warmup_steps=args.num_warmup_steps,
         weight_decay=args.weight_decay,
         report_to="wandb",
     )
