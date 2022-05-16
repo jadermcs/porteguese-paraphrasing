@@ -25,8 +25,8 @@ def actor_train(raw_args=None):
         help="Number of steps for the warmup in the lr scheduler.")
     args = parser.parse_args(raw_args)
 
-    model = MT5ForConditionalGeneration.from_pretrained("google/t5-small")
-    tokenizer = MT5Tokenizer.from_pretrained("google/t5-small")
+    model = MT5ForConditionalGeneration.from_pretrained("t5-small")
+    tokenizer = MT5Tokenizer.from_pretrained("t5-small")
 
     data = load_from_disk("data/actor_data")
 

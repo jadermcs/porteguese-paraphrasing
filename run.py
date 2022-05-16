@@ -9,9 +9,9 @@ def main():
     wandb.init(project="rl-paraphrasing")
     # generate_data()
 
-    critic_train([
-        "--num_train_epochs", "20",
-    ])
+    # critic_train([
+    #     "--num_train_epochs", "20",
+    # ])
     
     actor_train([
         "--num_train_epochs", "20",
