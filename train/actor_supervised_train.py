@@ -1,6 +1,6 @@
 import argparse
 from transformers import (
-    MT5ForConditionalGeneration, MT5Tokenizer,
+    T5ForConditionalGeneration, T5Tokenizer,
     Seq2SeqTrainer, Seq2SeqTrainingArguments,
     DataCollatorForSeq2Seq,
 )
@@ -25,8 +25,8 @@ def actor_train(raw_args=None):
         help="Number of steps for the warmup in the lr scheduler.")
     args = parser.parse_args(raw_args)
 
-    model = MT5ForConditionalGeneration.from_pretrained("t5-small")
-    tokenizer = MT5Tokenizer.from_pretrained("t5-small")
+    model = T5ForConditionalGeneration.from_pretrained("t5-small")
+    tokenizer = T5Tokenizer.from_pretrained("t5-small")
 
     data = load_from_disk("data/actor_data")
 
