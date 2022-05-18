@@ -102,7 +102,7 @@ def ppo_trainer(raw_args=None):
         t0 = time.time()
         
         #### get a batch from the dataset
-        batch = data.sample(config['batch_size'])
+        batch = data["train"].sample(config['batch_size'])
         game_data['query'] = batch['query'].tolist()
         query_tensors = batch['tokens']
         
@@ -112,6 +112,7 @@ def ppo_trainer(raw_args=None):
         response_tensors = []
         for i in range(int(config['batch_size']/fbs)):
             response  = actor.generate(query_tensors[i*fbs:(i+1)*fbs],
+                                       max_length=total_length,
                                        **decoding_config)
             response_tensors.append(response)
         response_tensors = torch.cat(response_tensors)

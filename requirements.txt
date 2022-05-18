@@ -1,5 +1,5 @@
-torch
-transformers
+torch==1.11.0
+transformers==4.18.0
 datasets
 sentencepiece
 wandb
