@@ -121,14 +121,12 @@ def ppo_trainer(raw_args=None):
         examples = critic_tokenizer(game_data['query'], game_data['response'],
                             max_length=args.token_length, return_tensors="pt",
                             padding="max_length", truncation=True)
-        print(examples)
-        tokens = examples["input_ids"].to(device)
-        attentions = examples["attetions"].to(device)
+        examples = {k:v.to(device) for k,v in examples.items()}
         timing['time/build_input_sentiment'] = time.time()-t
 
         #### get sentiment score
         t = time.time()
-        rewards = critic(tokens, attentions)
+        rewards = critic(**examples)
         timing['time/get_sentiment_preds'] = time.time()-t
         print(rewards)
         exit()
