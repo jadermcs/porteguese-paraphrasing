@@ -109,9 +109,9 @@ def ppo_trainer(raw_args=None):
         #### get response from gpt2
         t = time.time()
         total_length = config['txt_in_len'] + config['txt_out_len']
-        response  = actor.generate(batch["input_ids"],
-                                    max_length=total_length,
-                                    **decoding_config)
+        response  = actor.generate(torch.LongTensor(batch["input_ids"]),
+                                   max_length=total_length,
+                                   **decoding_config)
         game_data['response'] = actor_tokenizer.batch_decode(response)
         timing['time/get_response'] = time.time()-t
         print(game_data)
