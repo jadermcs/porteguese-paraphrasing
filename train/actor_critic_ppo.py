@@ -54,8 +54,8 @@ def ppo_trainer(raw_args=None):
         "batch_size": 256,
         "forward_batch_size": 16,
         "ppo_epochs": 4,   
-        "txt_in_len": 5,
-        "txt_out_len": 15,
+        "txt_in_len": args.token_length,
+        "txt_out_len": args.token_length,
         "lr": 1.41e-5,
         "init_kl_coef":0.2,
         "target": 6,
@@ -113,7 +113,7 @@ def ppo_trainer(raw_args=None):
         response  = actor.generate(game_data["input_ids"],
                                    max_length=total_length,
                                    **decoding_config)
-        game_data['response'] = actor_tokenizer.batch_decode(response)
+        game_data['response'] = actor_tokenizer.batch_decode(response, skip_special_tokens=True)
         timing['time/get_response'] = time.time()-t
         print(game_data)
         exit()
