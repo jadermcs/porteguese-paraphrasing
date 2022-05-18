@@ -96,13 +96,14 @@ def ppo_trainer(raw_args=None):
 
     for epoch in tqdm(range(int(np.ceil(config["steps"]/config['batch_size'])))):
         torch.cuda.empty_cache()
+        data = data.shuffle()
         logs = dict()
         game_data = dict()
         timing = dict()
         t0 = time.time()
         
         #### get a batch from the dataset
-        batch = data["train"].sample(config['batch_size'])
+        batch = data["train"].select(range(config['batch_size']))
         game_data['query'] = batch['query'].tolist()
         query_tensors = batch['tokens']
         
