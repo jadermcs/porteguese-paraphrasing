@@ -115,24 +115,21 @@ def ppo_trainer(raw_args=None):
                                    **decoding_config)
         game_data['response'] = actor_tokenizer.batch_decode(response, skip_special_tokens=True)
         timing['time/get_response'] = time.time()-t
-        print(game_data)
-        exit()
 
         #### tokenize text for sentiment analysis
         t = time.time()
-        texts = [q + r for q,r in zip(game_data['query'], game_data['response'])]
-        sentiment_inputs, attention_masks = build_bert_batch_from_txt(texts, critic_tokenizer, device)    
+        examples = critic_tokenizer(game_data['query'], game_data['response'],
+                            max_length=args.token_length,
+                            padding="max_length", truncation=True)
         timing['time/build_input_sentiment'] = time.time()-t
 
         #### get sentiment score
         t = time.time()
-        rewards = []
-        for i in range(int(config['batch_size']/fbs)):
-            res = critic(sentiment_inputs[i*fbs:(i+1)*fbs],
-                                        attention_masks[i*fbs:(i+1)*fbs])[0][:, 1].detach()
-            rewards.append(res)
-        rewards = torch.cat(rewards)
+        rewards = critic(**examples)
         timing['time/get_sentiment_preds'] = time.time()-t
+        print(examples)
+        print(rewards)
+        exit()
         
         #### Run PPO training 
         t = time.time()
