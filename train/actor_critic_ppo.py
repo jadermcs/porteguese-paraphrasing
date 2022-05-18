@@ -77,19 +77,18 @@ def ppo_trainer(raw_args=None):
     data = load_from_disk("data/actor_data")
 
     def prepare(examples):
-        examples["input_ids"] = actor_tokenizer(examples["setA"], return_tensors="pt",
+        examples["input_ids"] = actor_tokenizer(examples["setA"],
                                                 padding="max_length").input_ids
-        examples["decoder_input_ids"] = actor_tokenizer(examples["setB"], return_tensors="pt",
+        examples["decoder_input_ids"] = actor_tokenizer(examples["setB"],
                                                 padding="max_length").input_ids
-        examples["query"] = actor_tokenizer.batch_decode(examples["input_ids"],
+        examples["query"] = actor_tokenizer.decode(examples["input_ids"],
                                                    skip_special_tokens=True)
         return examples
 
     data = data.map(
         prepare,
         remove_columns=["setA", "setB"],
-        num_proc=4,
-        batched=True,
+        num_proc=8,
     )
 
     ppo_trainer = PPOTrainer(actor, ref_actor, **config)
