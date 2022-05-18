@@ -88,7 +88,7 @@ def ppo_trainer(raw_args=None):
     data = data.map(
         prepare,
         remove_columns=["setA", "setB"],
-        num_proc=8,
+        num_proc=16,
     )
 
     ppo_trainer = PPOTrainer(actor, ref_actor, **config)
