@@ -104,20 +104,15 @@ def ppo_trainer(raw_args=None):
         
         #### get a batch from the dataset
         batch = data["train"].select(range(config['batch_size']))
-        game_data['query'] = batch['query'].tolist()
-        query_tensors = batch['tokens']
+        game_data['query'] = batch['query']
         
         #### get response from gpt2
         t = time.time()
-        total_length = config['txt_in_len']+config['txt_out_len']
-        response_tensors = []
-        for i in range(int(config['batch_size']/fbs)):
-            response  = actor.generate(query_tensors[i*fbs:(i+1)*fbs],
-                                       max_length=total_length,
-                                       **decoding_config)
-            response_tensors.append(response)
-        response_tensors = torch.cat(response_tensors)
-        game_data['response'] = [actor_tokenizer.decode(response_tensors[i, :]) for i in range(config['batch_size'])]
+        total_length = config['txt_in_len'] + config['txt_out_len']
+        response  = actor.generate(batch["input_ids"],
+                                    max_length=total_length,
+                                    **decoding_config)
+        game_data['response'] = actor_tokenizer.batch_decode(response)
         timing['time/get_response'] = time.time()-t
         print(game_data)
         exit()
