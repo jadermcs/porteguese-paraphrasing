@@ -119,7 +119,7 @@ def ppo_trainer(raw_args=None):
         #### tokenize text for sentiment analysis
         t = time.time()
         examples = critic_tokenizer(game_data['query'], game_data['response'],
-                            max_length=args.token_length,
+                            max_length=args.token_length, return_tensors="pt",
                             padding="max_length", truncation=True)
         timing['time/build_input_sentiment'] = time.time()-t
 
