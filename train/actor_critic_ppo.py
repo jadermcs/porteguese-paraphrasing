@@ -51,7 +51,7 @@ def ppo_trainer(raw_args=None):
 
     config = {
         "steps": 25600,
-        "batch_size": 256,
+        "batch_size": 32,
         "forward_batch_size": 16,
         "ppo_epochs": 4,   
         "txt_in_len": args.token_length,
