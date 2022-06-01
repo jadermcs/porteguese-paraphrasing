@@ -8,6 +8,8 @@
 source /etc/profile.d/modules.sh
 module load python/python3-10
 module load cuda/cuda-10.1
+source ~/.bashrc #configures your shell to use conda activate
+conda activate transformers-env
 echo "Inicio: "`date`
 mpirun -n 10 intel_mpi_hello_world | sort
 sleep 1m

@@ -43,8 +43,8 @@ class ValueHead(nn.Module):
         return output
 
 
-class T5HeadWithValueModel(T5ForConditionalGeneration):
-    """The T5HeadWithValueModel class implements a T5 language model with a secondary, scalar head."""
+class T5HeadWithValue(T5ForConditionalGeneration):
+    """The T5HeadWithValue class implements a T5 language model with a secondary, scalar head."""
     def __init__(self, config):
         super().__init__(config)
         config.num_labels = 1
@@ -205,18 +205,3 @@ class T5HeadWithValueModel(T5ForConditionalGeneration):
             encoder_hidden_states=encoder_outputs.hidden_states,
             encoder_attentions=encoder_outputs.attentions,
         )
-
-    def respond_to_batch(self, queries, txt_len=32, top_k=0, top_p=1.0):
-        """Sample text from language model."""
-        input_ids = queries
-        decoder_input_ids = torch.zeros(queries.shape[0], dtype=torch.int).unsqueeze(-1)
-        for i in range(txt_len):
-            # Get Logits
-            outputs = self.forward(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
-            next_token_logits = outputs[0][:, -1, :]
-            next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=top_k, top_p=top_p)
-            # Sample
-            probs = F.softmax(next_token_logits, dim=-1)
-            next_token = torch.multinomial(probs, num_samples=1).squeeze(1)
-            decoder_input_ids = torch.cat([decoder_input_ids, next_token.unsqueeze(-1)], dim=-1)
-        return decoder_input_ids[:, -txt_len:]

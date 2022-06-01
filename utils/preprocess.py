@@ -66,7 +66,7 @@ def generate_data():
     data = DatasetDict({"train": train, "valid": valid})
 
     def batched_eda(examples):
-        return [eda(example, alpha_sr=.0, alpha_rs=.1, alpha_ri=.0,
+        return [eda(example, alpha_sr=.0, alpha_rs=.1, alpha_ri=.1,
                     p_rd=.2, num_aug=1)[0] for example in examples]
 
     def gen_examples(examples):

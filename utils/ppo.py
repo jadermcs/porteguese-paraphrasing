@@ -37,7 +37,6 @@ def logprobs_from_logits(logits, labels):
     logpy = torch.gather(logp, 2, labels.unsqueeze(2)).squeeze(-1)
     return logpy
 
-
 def whiten(values, shift_mean=True):
     """Whiten values."""
     mean, var = torch.mean(values), torch.var(values)
@@ -158,7 +157,7 @@ class PPOTrainer:
             self.kl_ctl = FixedKLController(self.ppo_params['init_kl_coef'])
 
 
-    def step(self, query, response, scores):
+    def step(self, game):
         """
         Run a PPO optimisation step.
         
@@ -175,7 +174,7 @@ class PPOTrainer:
         timing = dict()
         t0 = time.time()
         
-        gen_len = response.shape[1]
+        gen_len = game["response"].shape[1]
         model_input = torch.cat((query, response), axis=1)
         
         t = time.time()

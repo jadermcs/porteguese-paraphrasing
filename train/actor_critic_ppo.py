@@ -8,8 +8,9 @@ import time
 
 from transformers import (
     BertForSequenceClassification, BertTokenizer,
-    T5ForConditionalGeneration, T5Tokenizer
+    T5Tokenizer
 )
+from models import T5WithValueHead
 
 from utils.ppo import PPOTrainer
 
@@ -38,8 +39,8 @@ def ppo_trainer(raw_args=None):
     
     device   = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    actor = T5ForConditionalGeneration.from_pretrained(args.actor)
-    ref_actor = T5ForConditionalGeneration.from_pretrained(args.actor)
+    actor = T5WithValueHead.from_pretrained(args.actor)
+    ref_actor = T5WithValueHead.from_pretrained(args.actor)
     actor_tokenizer = T5Tokenizer.from_pretrained(args.actor)
 
     critic = BertForSequenceClassification.from_pretrained(args.critic)
@@ -127,14 +128,15 @@ def ppo_trainer(raw_args=None):
         #### get sentiment score
         t = time.time()
         rewards = critic(**examples)
+        game_data["rewards"] = rewards
         timing['time/get_sentiment_preds'] = time.time()-t
-        print(rewards)
-        exit()
         
         #### Run PPO training 
         t = time.time()
-        stats = ppo_trainer.step(query_tensors, response_tensors, rewards)
+        stats = ppo_trainer.step(game_data)
         timing['time/optimization'] = time.time()-t
+        print(rewards)
+        exit()
         
         #### Log everything
         timing['time/epoch'] = time.time()-t0
