@@ -1,9 +1,9 @@
 from transformers import BertTokenizer, T5Tokenizer
 from datasets import load_from_disk
 
-actor_tokenizer = T5Tokenizer.from_pretrained("/content/models/actor")
-critic_tokenizer = BertTokenizer.from_pretrained("/content/models/critic")
-data = load_from_disk("/content/actor_data").shuffle()
+actor_tokenizer = T5Tokenizer.from_pretrained("models/actor")
+critic_tokenizer = BertTokenizer.from_pretrained("models/critic")
+data = load_from_disk("data/actor_data").shuffle()
 
 token_length = 128
 
