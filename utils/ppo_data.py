@@ -21,7 +21,7 @@ def prepare(examples):
 data = data.map(
     prepare,
     remove_columns=["setA", "setB"],
-    num_proc=16,
+    num_proc=32,
 )
 
 data.save_to_disk("data/ppo_data")
