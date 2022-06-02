@@ -13,14 +13,15 @@ def remove_prefix(text, prefix):
     return text  # or whatever
 
 def prepare(examples):
-    examples["input_ids"] = actor_tokenizer("paraphrase: "+examples["setA"],
+    prefix = "paraphrase: "
+    examples["input_ids"] = actor_tokenizer(prefix + examples["setA"],
                                             padding="max_length",
                                             max_length=token_length).input_ids
     examples["decoder_input_ids"] = actor_tokenizer(examples["setB"],
                                             padding="max_length",
                                             max_length=token_length).input_ids
     query = actor_tokenizer.decode(examples["input_ids"], skip_special_tokens=True)
-    examples["query"] = remove_prefix(query)
+    examples["query"] = remove_prefix(query, prefix)
     return examples
 
 data = data.map(
