@@ -37,7 +37,8 @@ def ppo_trainer(raw_args=None):
         help="")
     args = parser.parse_args(raw_args)
     
-    device   = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device_critic = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     actor = T5WithValueHead.from_pretrained(args.actor)
     ref_actor = T5WithValueHead.from_pretrained(args.actor)
@@ -48,7 +49,7 @@ def ppo_trainer(raw_args=None):
 
     actor.to(device)
     ref_actor.to(device)
-    critic.to(device)
+    critic.to(device_critic)
 
     config = {
         "steps": 500_000,
@@ -116,7 +117,7 @@ def ppo_trainer(raw_args=None):
         #### tokenize text for paraphrasing quality
         t = time.time()
         examples = critic_tokenizer(rollout['query'],
-                                    rollout['response'], max_length=token_length,
+                                    rollout['response'], max_length=args.token_length,
                                     return_tensors="pt", padding="max_length",
                                     truncation=True)
         examples = {k:v.to(device_critic) for k,v in examples.items()}
