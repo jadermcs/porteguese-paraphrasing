@@ -10,7 +10,7 @@ from transformers import (
     BertForSequenceClassification, BertTokenizer,
     T5Tokenizer
 )
-from models import T5HeadWithValue
+from utils.model import T5HeadWithValue
 
 from utils.ppo import PPOTrainer
 
