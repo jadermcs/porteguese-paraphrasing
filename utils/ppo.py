@@ -71,7 +71,6 @@ def stats_to_np(stats_dict):
             new_dict[k] = float(new_dict[k])
     return new_dict
 
-@dataclass
 class AdaptiveKLController:
     """
     Adaptive KL controller described in the paper:
@@ -84,7 +83,7 @@ class AdaptiveKLController:
 
     def update(self, current, n_steps):
         target = self.target
-        proportional_error = torch.clip(current / target - 1, -0.2, 0.2)
+        proportional_error = np.clip(current / target - 1, -0.2, 0.2)
         mult = 1 + proportional_error * n_steps / self.horizon
         self.value *= mult
 
@@ -96,7 +95,6 @@ class FixedKLController:
 
     def update(self, current, n_steps):
         pass
-
 
 class PPOTrainer:
     """
@@ -157,7 +155,7 @@ class PPOTrainer:
             self.kl_ctl = FixedKLController(self.ppo_params['init_kl_coef'])
 
 
-    def step(self, game):
+    def step(self, rollout):
         """
         Run a PPO optimisation step.
         
@@ -173,41 +171,28 @@ class PPOTrainer:
         bs = self.ppo_params['batch_size']
         timing = dict()
         t0 = time.time()
-        
-        gen_len = game["response"].shape[1]
-        model_input = torch.cat((query, response), axis=1)
-        
-        t = time.time()
-        logprobs, ref_logprobs, values = self.batched_forward_pass(model_input, gen_len)
-        timing['time/ppo/forward_pass'] = time.time()-t
+
+        logprobs = logprobs_from_logits(rollout["logits"], rollout["response_ids"])
+        ref_logprobs = logprobs_from_logits(rollout["ref_logits"], rollout["response_ids"])
+        values = rollout["values"]
+        response = rollout["response"]
 
         t = time.time()
-        rewards, non_score_reward, kl_coef = self.compute_rewards(scores, logprobs, ref_logprobs)
+        rewards, non_score_reward = self.compute_rewards(rollout["rewards"], logprobs, ref_logprobs)
         timing['time/ppo/compute_rewards'] = time.time()-t 
         
         t = time.time() 
-        all_stats = []
-        idxs = list(range(bs))
-        for _ in range(self.ppo_params['ppo_epochs']):
-            random.shuffle(idxs)
-            for i in range(bs):
-                idx = idxs[i]
-                train_stats = self.train_minibatch(logprobs[idx:idx+1], values[idx:idx+1],
-                                                   rewards[idx:idx+1], query[idx:idx+1],
-                                                   response[idx:idx+1], model_input[idx:idx+1])
-                all_stats.append(train_stats)
+        train_stats = self.train_minibatch(logprobs, values, rewards, rollout)
         timing['time/ppo/optimize_step'] = time.time()-t
         
-        t = time.time()
-        train_stats = stack_dicts(all_stats)
-        
+        t = time.time()        
         # reshape advantages/ratios such that they are not averaged.
         train_stats['policy/advantages'] = torch.flatten(train_stats['policy/advantages']).unsqueeze(0)
         train_stats['policy/ratio'] = torch.flatten(train_stats['policy/ratio']).unsqueeze(0)
         
-        stats = self.record_step_stats(scores=scores, logprobs=logprobs, ref_logprobs=ref_logprobs,
-                                       non_score_reward=non_score_reward, train_stats=train_stats,
-                                       kl_coef=kl_coef)
+        stats = self.record_step_stats(scores=rollout["rewards"], logprobs=logprobs,
+                                       ref_logprobs=ref_logprobs, non_score_reward=non_score_reward,
+                                       train_stats=train_stats, kl_coef=self.kl_ctl.value)
         stats = stats_to_np(stats)
         timing['time/ppo/calc_stats'] = time.time()-t
 
@@ -216,30 +201,11 @@ class PPOTrainer:
         timing['time/ppo/total'] = time.time()-t0
         stats.update(timing)
         return stats
-
-    def batched_forward_pass(self, model_input, gen_len):
-        """Calculate model outputs in multiple batches."""
-        bs = self.ppo_params['batch_size']
-        fbs = self.ppo_params['forward_batch_size']
-        logprobs = []
-        ref_logprobs = []
-        values = []
-        
-        for i in range(int(self.ppo_params['batch_size']/fbs)):
-            m_input = model_input[i*fbs:(i+1)*fbs]
-            logits, _, v = self.model(m_input)
-            ref_logits, _, _ = self.ref_model(m_input)
-            
-            values.append(v[:, -gen_len-1:-1].detach())
-            logprobs.append(logprobs_from_logits(logits[:,:-1,:], m_input[:,1:])[:, -gen_len:].detach())
-            ref_logprobs.append(logprobs_from_logits(ref_logits[:,:-1,:], m_input[:,1:])[:, -gen_len:].detach())
-   
-        return torch.cat(logprobs), torch.cat(ref_logprobs), torch.cat(values)
     
-    def train_minibatch(self, logprobs, values, rewards, query, response, model_input):
+    # def train_minibatch(self, logprobs, values, rewards, query, response, model_input):
+    def train_minibatch(self, logprobs, values, rewards, rollout):
         """Train one PPO minibatch"""
-        loss_p, loss_v, train_stats  = self.loss(logprobs, values, rewards, query, response, model_input)
-        loss = loss_p + loss_v
+        loss, train_stats  = self.loss(logprobs, values, rewards, rollout)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -249,15 +215,16 @@ class PPOTrainer:
         """Compute per token rewards from scores and KL-penalty."""
         kl = logprobs - ref_logprobs
         non_score_reward = -self.kl_ctl.value * kl
-        rewards = non_score_reward.clone().detach()
+        rewards = non_score_reward.clone()
         rewards[:, -1] += scores
-        return rewards, non_score_reward, self.kl_ctl.value
+        return rewards, non_score_reward
 
-    def loss(self, old_logprobs, values, rewards, query, response, model_input):
+    #def loss(self, old_logprobs, values, rewards, query, response, model_input):
+    def loss(self, old_logprobs, values, rewards, rollout):
         """Calculate policy and value losses."""
         lastgaelam = 0
         advantages_reversed = []
-        gen_len = response.shape[1]
+        gen_len = rollout["response_ids"].shape[1]
 
         for t in reversed(range(gen_len)):
             nextvalues = values[:, t + 1] if t < gen_len - 1 else 0.0
@@ -270,11 +237,12 @@ class PPOTrainer:
         advantages = whiten(advantages)
         advantages = advantages.detach()
 
-        logits, _, vpred = self.model(model_input)
-        logprob = logprobs_from_logits(logits[:,:-1,:], model_input[:, 1:])
+        model_output = self.model(input_ids=rollout["input_ids"],
+                                  decoder_input_ids=rollout["response_ids"])
+        logits = model_output.logits
+        vpred = model_output.values
         
-        #only the generation part of the values/logprobs is needed
-        logprob, vpred = logprob[:, -gen_len:], vpred[:,-gen_len-1:-1]
+        logprob = logprobs_from_logits(logits, rollout["response_ids"])
 
         vpredclipped = clip_by_value(vpred,
                                      values - self.ppo_params["cliprange_value"],
@@ -311,7 +279,7 @@ class PPOTrainer:
             val=dict(vpred=torch.mean(vpred), error=torch.mean((vpred - returns) ** 2),
                      clipfrac=vf_clipfrac, mean=value_mean, var=value_var),
         )
-        return pg_loss, self.ppo_params['vf_coef'] * vf_loss, flatten_dict(stats)
+        return loss, flatten_dict(stats)
 
 
     def record_step_stats(self, kl_coef, **data):

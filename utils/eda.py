@@ -2,7 +2,10 @@
 # Jason Wei and Kai Zou
 
 import random
+import string
 from random import shuffle
+
+from regex import W
 random.seed(1)
 
 #stop words list
@@ -167,10 +170,28 @@ def add_word(new_words):
 	new_words.insert(random_idx, random_synonym)
 
 ########################################################################
+# Random typo
+# Randomly insert n words into the sentence
+########################################################################
+
+def random_typo(words, p):
+	new_words = []
+	for word in words:
+		outcome = random.random()
+		if outcome <= p:
+			p /= 2.
+			ix = random.choice(range(len(word)))
+			new_word = ''.join([word[w] if w != ix else random.choice(string.ascii_letters) for w in range(len(word))])
+			new_words.append(new_word)
+		else:
+			new_words.append(word)
+	return new_words
+
+########################################################################
 # main data augmentation function
 ########################################################################
 
-def eda(sentence, alpha_sr=0.1, alpha_ri=0.1, alpha_rs=0.1, p_rd=0.1, num_aug=9):
+def eda(sentence, alpha_sr=0.1, alpha_ri=0.1, alpha_rs=0.1, p_rd=0.1, p_rt=0.2, num_aug=9):
 	
 	sentence = get_only_chars(sentence)
 	words = sentence.split(' ')
@@ -184,6 +205,8 @@ def eda(sentence, alpha_sr=0.1, alpha_ri=0.1, alpha_rs=0.1, p_rd=0.1, num_aug=9)
 	if (alpha_sr > 0):
 		n_sr = max(1, int(alpha_sr*num_words))
 		for _ in range(num_new_per_technique):
+			if num_words <= 4:
+				break
 			a_words = synonym_replacement(words, n_sr)
 			augmented_sentences.append(' '.join(a_words))
 
@@ -204,7 +227,14 @@ def eda(sentence, alpha_sr=0.1, alpha_ri=0.1, alpha_rs=0.1, p_rd=0.1, num_aug=9)
 	#rd
 	if (p_rd > 0):
 		for _ in range(num_new_per_technique):
+			if num_words <= 4:
+				break
 			a_words = random_deletion(words, p_rd)
+			augmented_sentences.append(' '.join(a_words))
+
+	if (p_rt > 0):
+		for _ in range(num_new_per_technique):
+			a_words = random_typo(words, p_rt)
 			augmented_sentences.append(' '.join(a_words))
 
 	augmented_sentences = [get_only_chars(sentence) for sentence in augmented_sentences]

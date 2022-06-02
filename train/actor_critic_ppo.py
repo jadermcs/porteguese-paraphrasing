@@ -51,13 +51,13 @@ def ppo_trainer(raw_args=None):
     critic.to(device)
 
     config = {
-        "steps": 25600,
+        "steps": 500_000,
         "batch_size": 32,
         "forward_batch_size": 16,
         "ppo_epochs": 4,   
         "txt_in_len": args.token_length,
         "txt_out_len": args.token_length,
-        "lr": 1.41e-5,
+        "lr": 3e-5,
         "init_kl_coef":0.2,
         "target": 6,
         "horizon":10000,
@@ -69,84 +69,79 @@ def ppo_trainer(raw_args=None):
     }
 
     decoding_config = {
-        "temperature": 0.5,
-        "typical_p": 0.2
+        "min_length":-1,
+        "top_k": 0.0,
+        "top_p": 1.0,
+        "do_sample": True, 
     }
 
     wandb.watch(actor, log='all')
 
-    data = load_from_disk("data/actor_data")
-
-    def prepare(examples):
-        examples["input_ids"] = actor_tokenizer(examples["setA"],
-                                                padding="max_length").input_ids
-        examples["decoder_input_ids"] = actor_tokenizer(examples["setB"],
-                                                padding="max_length").input_ids
-        examples["query"] = actor_tokenizer.decode(examples["input_ids"],
-                                                   skip_special_tokens=True)
-        return examples
-
-    data = data.map(
-        prepare,
-        remove_columns=["setA", "setB"],
-        num_proc=16,
-    )
+    data = load_from_disk("data/ppo_data")
 
     ppo_trainer = PPOTrainer(actor, ref_actor, **config)
-    fbs = config['forward_batch_size']
 
     for epoch in tqdm(range(int(np.ceil(config["steps"]/config['batch_size'])))):
         torch.cuda.empty_cache()
         data = data.shuffle()
         logs = dict()
-        game_data = dict()
+        rollout = dict()
         timing = dict()
         t0 = time.time()
         
         #### get a batch from the dataset
         batch = data["train"].select(range(config['batch_size']))
-        game_data['query'] = batch['query']
-        game_data["input_ids"] = torch.LongTensor(batch["input_ids"]).to(device)
+        rollout['query'] = batch['query']
+        try: # corrigir essa gambiarra  - expected sequence of length 128 at dim 1 (got 145)
+            rollout["input_ids"] = torch.LongTensor(batch["input_ids"]).to(device)
+        except:
+            continue
         
-        #### get response from gpt2
+        #### get response from t5
         t = time.time()
-        total_length = config['txt_in_len'] + config['txt_out_len']
-        response  = actor.generate(game_data["input_ids"],
-                                   max_length=total_length,
-                                   **decoding_config)
-        game_data['response'] = actor_tokenizer.batch_decode(response, skip_special_tokens=True)
-        timing['time/get_response'] = time.time()-t
+        total_length = config['txt_out_len']
+        response  = actor.generate(rollout["input_ids"],
+                                    max_length=total_length,
+                                    **decoding_config)
+        # with torch.no_grad():
+        actor_output = actor(input_ids=rollout["input_ids"], decoder_input_ids=response)
+        rollout["values"] = actor_output.values
+        rollout["logits"] = actor_output.logits
+        rollout["ref_logits"] = ref_actor(input_ids=rollout["input_ids"],
+                                        decoder_input_ids=response).logits
+        rollout["response_ids"] = response
+        rollout["response"] = actor_tokenizer.batch_decode(response, skip_special_tokens=True)
+        timing["time/get_response"] = time.time()-t
 
-        #### tokenize text for sentiment analysis
+        #### tokenize text for paraphrasing quality
         t = time.time()
-        examples = critic_tokenizer(game_data['query'], game_data['response'],
-                            max_length=args.token_length, return_tensors="pt",
-                            padding="max_length", truncation=True)
-        examples = {k:v.to(device) for k,v in examples.items()}
+        examples = critic_tokenizer(rollout['query'],
+                                    rollout['response'], max_length=token_length,
+                                    return_tensors="pt", padding="max_length",
+                                    truncation=True)
+        examples = {k:v.to(device_critic) for k,v in examples.items()}
         timing['time/build_input_sentiment'] = time.time()-t
 
-        #### get sentiment score
+        #### get paraphrasing score
         t = time.time()
-        rewards = critic(**examples)
-        game_data["rewards"] = rewards
+        rewards = critic(**examples).logits.softmax(dim=-1)[:,1]
+        rollout["rewards"] = rewards.to(device)
         timing['time/get_sentiment_preds'] = time.time()-t
         
         #### Run PPO training 
         t = time.time()
-        stats = ppo_trainer.step(game_data)
+        stats = ppo_trainer.step(rollout)
         timing['time/optimization'] = time.time()-t
-        print(rewards)
-        exit()
-        
+
         #### Log everything
         timing['time/epoch'] = time.time()-t0
-        table_rows = [list(r) for r in zip(game_data['query'], game_data['response'], rewards.cpu().tolist())]
+        table_rows = [list(r) for r in zip(rollout['query'], rollout['response'], rewards.cpu().tolist())]
         logs.update({'game_log':wandb.Table(
             columns=['query', 'response', 'reward'],
             rows=table_rows)})
         logs.update(timing)
         logs.update(stats)
-        logs['env/reward_mean'] = torch.mean(rewards).cpu().numpy()
-        logs['env/reward_std'] = torch.std(rewards).cpu().numpy()
-        logs['env/reward_dist'] = rewards.cpu().numpy()
+        logs['env/reward_mean'] = torch.mean(rewards).cpu().detach().numpy()
+        logs['env/reward_std'] = torch.std(rewards).cpu().detach().numpy()
+        logs['env/reward_dist'] = rewards.cpu().detach().numpy()
         wandb.log(logs)

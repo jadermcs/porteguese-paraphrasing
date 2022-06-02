@@ -4,9 +4,8 @@ import warnings
 
 from torch import nn
 import torch
-import torch.nn.functional as F
 
-from transformers import T5ForConditionalGeneration, top_k_top_p_filtering
+from transformers import T5ForConditionalGeneration
 from transformers.modeling_outputs import Seq2SeqLMOutput, BaseModelOutput
 
 __HEAD_MASK_WARNING_MSG = """
@@ -18,7 +17,7 @@ num_heads)`.
 
 
 @dataclass
-class Ses2SeqWithValue(Seq2SeqLMOutput):
+class Seq2SeqWithValue(Seq2SeqLMOutput):
     values: torch.FloatTensor = None
 
 
@@ -41,7 +40,6 @@ class ValueHead(nn.Module):
         output = self.last_dropout(output)
 
         return output
-
 
 class T5HeadWithValue(T5ForConditionalGeneration):
     """The T5HeadWithValue class implements a T5 language model with a secondary, scalar head."""
@@ -77,7 +75,7 @@ class T5HeadWithValue(T5ForConditionalGeneration):
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
-    ) -> Union[Tuple[torch.FloatTensor], Seq2SeqLMOutput]:
+    ) -> Union[Tuple[torch.FloatTensor], Seq2SeqWithValue]:
         r"""
         labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
             Labels for computing the sequence classification/regression loss. Indices should be in `[-100, 0, ...,
@@ -193,7 +191,7 @@ class T5HeadWithValue(T5ForConditionalGeneration):
             output = (lm_logits,) + decoder_outputs[1:] + encoder_outputs
             return ((loss,) + output) if loss is not None else output
 
-        return Ses2SeqWithValue(
+        return Seq2SeqWithValue(
             loss=loss,
             logits=lm_logits,
             values=lm_values,
