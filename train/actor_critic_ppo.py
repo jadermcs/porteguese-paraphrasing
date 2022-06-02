@@ -10,7 +10,7 @@ from transformers import (
     BertForSequenceClassification, BertTokenizer,
     T5Tokenizer
 )
-from models import T5WithValueHead
+from models import T5HeadWithValue
 
 from utils.ppo import PPOTrainer
 
@@ -40,8 +40,8 @@ def ppo_trainer(raw_args=None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     device_critic = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    actor = T5WithValueHead.from_pretrained(args.actor)
-    ref_actor = T5WithValueHead.from_pretrained(args.actor)
+    actor = T5HeadWithValue.from_pretrained(args.actor)
+    ref_actor = T5HeadWithValue.from_pretrained(args.actor)
     actor_tokenizer = T5Tokenizer.from_pretrained(args.actor)
 
     critic = BertForSequenceClassification.from_pretrained(args.critic)
