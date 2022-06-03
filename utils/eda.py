@@ -202,11 +202,9 @@ def eda(sentence, alpha_sr=0.1, alpha_ri=0.1, alpha_rs=0.1, p_rd=0.1, p_rt=0.2, 
 	num_new_per_technique = int(num_aug/4)+1
 
 	#sr
-	if (alpha_sr > 0):
+	if (alpha_sr > 0 and num_words > 6):
 		n_sr = max(1, int(alpha_sr*num_words))
 		for _ in range(num_new_per_technique):
-			if num_words <= 4:
-				break
 			a_words = synonym_replacement(words, n_sr)
 			augmented_sentences.append(' '.join(a_words))
 
@@ -225,10 +223,8 @@ def eda(sentence, alpha_sr=0.1, alpha_ri=0.1, alpha_rs=0.1, p_rd=0.1, p_rt=0.2, 
 			augmented_sentences.append(' '.join(a_words))
 
 	#rd
-	if (p_rd > 0):
+	if (p_rd > 0 and num_words > 4):
 		for _ in range(num_new_per_technique):
-			if num_words <= 4:
-				break
 			a_words = random_deletion(words, p_rd)
 			augmented_sentences.append(' '.join(a_words))
 
