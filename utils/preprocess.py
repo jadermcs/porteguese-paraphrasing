@@ -90,16 +90,16 @@ def generate_data():
         if random.random() < .5:
             if random.random() < .3:
                 example["setB"] = example["other"]
-                # example["labels"] = -1.5
+                example["labels"] = -1.5
             else:
                 example["setB"] = example["fake"]
-                # example["labels"] = -.55
-            example["labels"] = 0
+                example["labels"] = -.55
+            # example["labels"] = 0
         else:
             if random.random() < .3:
                 example["setB"] = example["setB"][:-1]
-            # example["labels"] = 1.5 - jaccard_similarity(example["setA"], example["setB"])
-            example["labels"] = 1
+            example["labels"] = 1.5 - jaccard_similarity(example["setA"], example["setB"])
+            # example["labels"] = 1
         return example
 
     data = data.map(

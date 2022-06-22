@@ -28,7 +28,7 @@ def critic_train(raw_args=None):
     args = parser.parse_args(raw_args)
     
     # config for regression:
-    model = BertForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels = 2)
+    model = BertForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels = 1)
     tokenizer = BertTokenizer.from_pretrained("distilbert-base-uncased")
 
     data = load_from_disk("data/critic_data")
@@ -45,27 +45,27 @@ def critic_train(raw_args=None):
         num_proc=8,
     )
 
-    # def compute_metrics(eval_pred):
-    #     predictions, labels = eval_pred
-    #     return {
-    #         "rmse": mean_squared_error(labels, predictions, squared=False),
-    #         "mae": mean_absolute_error(labels, predictions),
-    #         "r2_score": r2_score(labels, predictions),
-    #         "max_error": max_error(labels, predictions),
-    #         "mape": mean_absolute_percentage_error(labels, predictions),
-    #         }
-
-    def compute_metrics(pred):
-        labels = pred.label_ids
-        preds = pred.predictions.argmax(-1)
-        precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='binary')
-        acc = accuracy_score(labels, preds)
+    def compute_metrics(eval_pred):
+        predictions, labels = eval_pred
         return {
-            'accuracy': acc,
-            'f1': f1,
-            'precision': precision,
-            'recall': recall
-        }
+            "rmse": mean_squared_error(labels, predictions, squared=False),
+            "mae": mean_absolute_error(labels, predictions),
+            "r2_score": r2_score(labels, predictions),
+            "max_error": max_error(labels, predictions),
+            "mape": mean_absolute_percentage_error(labels, predictions),
+            }
+
+    # def compute_metrics(pred):
+    #     labels = pred.label_ids
+    #     preds = pred.predictions.argmax(-1)
+    #     precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='binary')
+    #     acc = accuracy_score(labels, preds)
+    #     return {
+    #         'accuracy': acc,
+    #         'f1': f1,
+    #         'precision': precision,
+    #         'recall': recall
+    #     }
 
     args = TrainingArguments(
         "models/critic",
